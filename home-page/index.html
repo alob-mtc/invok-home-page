@@ -316,17 +316,47 @@
         border: 0;
       }
 
+      /* Mobile Navigation */
+      .mobile-nav-toggle {
+        display: none;
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: var(--secondary);
+        cursor: pointer;
+      }
+
       @media (max-width: 768px) {
-        .header-content {
-          flex-direction: column;
+        .mobile-nav-toggle {
+          display: block;
+        }
+
+        nav {
+          display: none;
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          background: white;
+          padding: 20px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        nav.active {
+          display: block;
         }
 
         nav ul {
-          margin-top: 20px;
+          flex-direction: column;
+          gap: 15px;
         }
 
         nav li {
-          margin: 0 10px;
+          margin: 0;
+        }
+
+        .hero {
+          padding: 60px 0;
         }
 
         .hero h1 {
@@ -335,34 +365,86 @@
 
         .hero p {
           font-size: 18px;
+          padding: 0 20px;
         }
 
         .btn {
           display: block;
-          margin: 10px auto;
-          width: 80%;
+          width: 100%;
+          margin: 10px 0;
+          text-align: center;
         }
 
         .btn-secondary {
           margin-left: 0;
+        }
+
+        .section {
+          padding: 40px 0;
+        }
+
+        .section-title {
+          font-size: 28px;
+          margin-bottom: 30px;
+        }
+
+        .features {
+          grid-template-columns: 1fr;
+          gap: 20px;
+          padding: 0 20px;
+        }
+
+        .feature-card {
+          padding: 20px;
+        }
+
+        .step {
+          padding-left: 30px;
+        }
+
+        .step-number {
+          width: 24px;
+          height: 24px;
+          font-size: 14px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .hero h1 {
+          font-size: 28px;
+        }
+
+        .hero p {
+          font-size: 16px;
+        }
+
+        .container {
+          padding: 0 15px;
+        }
+
+        .header-content {
+          padding: 0 15px;
         }
       }
     </style>
   </head>
   <body>
     <header>
-      <div class="container header-content">
-        <div class="logo">
-          Serverless<span>Framework</span> <span class="poc-badge">POC</span>
+      <div class="container">
+        <div class="header-content">
+          <div class="logo">
+            Serverless<span>Framework</span>
+            <span class="poc-badge">POC</span>
+          </div>
+          <button class="mobile-nav-toggle" aria-label="Toggle navigation">☰</button>
+          <nav>
+            <ul>
+              <li><a href="#features">Features</a></li>
+              <li><a href="#architecture">Architecture</a></li>
+              <li><a href="#quickstart">Quickstart</a></li>
+            </ul>
+          </nav>
         </div>
-        <nav>
-          <ul>
-            <li><a href="#features">Features</a></li>
-            <li><a href="#architecture">Architecture</a></li>
-            <li><a href="#quickstart">Quick Start</a></li>
-            <li><a href="#demo">Demo</a></li>
-          </ul>
-        </nav>
       </div>
     </header>
 
@@ -562,5 +644,21 @@
         <p>&copy; 2023 Serverless Framework. All rights reserved.</p>
       </div>
     </footer>
+
+    <script>
+      // Mobile navigation toggle
+      document.querySelector('.mobile-nav-toggle').addEventListener('click', function() {
+        document.querySelector('nav').classList.toggle('active');
+      });
+
+      // Close mobile menu when clicking outside
+      document.addEventListener('click', function(event) {
+        const nav = document.querySelector('nav');
+        const toggle = document.querySelector('.mobile-nav-toggle');
+        if (!nav.contains(event.target) && !toggle.contains(event.target)) {
+          nav.classList.remove('active');
+        }
+      });
+    </script>
   </body>
 </html>
