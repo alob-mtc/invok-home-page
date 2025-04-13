@@ -1,0 +1,5 @@
+{
+  "function_name": "home-page",
+  "runtime": "go",
+  "env": {}
+}

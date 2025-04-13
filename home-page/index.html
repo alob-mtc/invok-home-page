@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Serverless Framework (POC)</title>
+    <style>
+      :root {
+        --primary: #5965e0;
+        --primary-light: #7380f5;
+        --secondary: #24292e;
+        --text: #333;
+        --text-light: #666;
+        --background: #f9f9fb;
+        --code-bg: #f1f1f1;
+        --border: #eaeaea;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        line-height: 1.6;
+        color: var(--text);
+        background-color: var(--background);
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      header {
+        padding: 30px 0;
+        background-color: white;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--secondary);
+      }
+
+      .logo span {
+        color: var(--primary);
+      }
+
+      .poc-badge {
+        background-color: #ffebee;
+        color: #e53935;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        vertical-align: middle;
+        margin-left: 8px;
+      }
+
+      nav ul {
+        display: flex;
+        list-style: none;
+      }
+
+      nav li {
+        margin-left: 30px;
+      }
+
+      nav a {
+        text-decoration: none;
+        color: var(--text);
+        font-weight: 500;
+        transition: color 0.2s;
+      }
+
+      nav a:hover {
+        color: var(--primary);
+      }
+
+      .hero {
+        padding: 100px 0;
+        background: linear-gradient(135deg, white, var(--background));
+        text-align: center;
+      }
+
+      .hero h1 {
+        font-size: 48px;
+        margin-bottom: 20px;
+        color: var(--secondary);
+      }
+
+      .hero p {
+        font-size: 20px;
+        color: var(--text-light);
+        max-width: 700px;
+        margin: 0 auto 40px;
+      }
+
+      .btn {
+        display: inline-block;
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+      }
+
+      .btn-primary {
+        background-color: var(--primary);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background-color: var(--primary-light);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(89, 101, 224, 0.3);
+      }
+
+      .btn-secondary {
+        background-color: white;
+        color: var(--primary);
+        border: 1px solid var(--primary);
+        margin-left: 15px;
+      }
+
+      .btn-secondary:hover {
+        background-color: rgba(89, 101, 224, 0.05);
+        transform: translateY(-2px);
+      }
+
+      .section {
+        padding: 80px 0;
+      }
+
+      .section-title {
+        text-align: center;
+        font-size: 36px;
+        margin-bottom: 50px;
+        color: var(--secondary);
+      }
+
+      .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 30px;
+      }
+
+      .feature-card {
+        background-color: white;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s, box-shadow 0.3s;
+      }
+
+      .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      }
+
+      .feature-icon {
+        width: 60px;
+        height: 60px;
+        background-color: var(--primary);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+        font-size: 24px;
+      }
+
+      .feature-card h3 {
+        margin-bottom: 15px;
+        font-size: 20px;
+      }
+
+      .feature-card p {
+        color: var(--text-light);
+      }
+
+      .architecture {
+        text-align: center;
+        background-color: white;
+      }
+
+      .architecture img {
+        max-width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      }
+
+      .code-block {
+        background-color: var(--code-bg);
+        padding: 20px;
+        border-radius: 8px;
+        margin: 20px 0;
+        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+        font-size: 14px;
+        overflow-x: auto;
+      }
+
+      .quickstart {
+        background-color: white;
+      }
+
+      .quickstart-steps {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .step {
+        margin-bottom: 30px;
+        padding-left: 40px;
+        position: relative;
+      }
+
+      .step-number {
+        position: absolute;
+        left: 0;
+        width: 30px;
+        height: 30px;
+        background-color: var(--primary);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+      }
+
+      .step h3 {
+        margin-bottom: 10px;
+      }
+
+      .cta {
+        text-align: center;
+        background: linear-gradient(
+          135deg,
+          var(--primary-light),
+          var(--primary)
+        );
+        color: white;
+      }
+
+      .cta h2 {
+        color: white;
+        margin-bottom: 30px;
+      }
+
+      .cta .btn-secondary {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+        border-color: white;
+      }
+
+      .cta .btn-secondary:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+      }
+
+      footer {
+        background-color: var(--secondary);
+        color: white;
+        padding: 50px 0;
+        text-align: center;
+      }
+
+      .footer-links {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 20px;
+      }
+
+      .footer-links a {
+        color: white;
+        margin: 0 15px;
+        text-decoration: none;
+        opacity: 0.8;
+        transition: opacity 0.2s;
+      }
+
+      .footer-links a:hover {
+        opacity: 1;
+      }
+
+      .video-container {
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        padding-top: 56.25%; /* 16:9 Aspect Ratio */
+        margin-top: 40px;
+      }
+
+      .video-container iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+
+      @media (max-width: 768px) {
+        .header-content {
+          flex-direction: column;
+        }
+
+        nav ul {
+          margin-top: 20px;
+        }
+
+        nav li {
+          margin: 0 10px;
+        }
+
+        .hero h1 {
+          font-size: 36px;
+        }
+
+        .hero p {
+          font-size: 18px;
+        }
+
+        .btn {
+          display: block;
+          margin: 10px auto;
+          width: 80%;
+        }
+
+        .btn-secondary {
+          margin-left: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="container header-content">
+        <div class="logo">
+          Serverless<span>Framework</span> <span class="poc-badge">POC</span>
+        </div>
+        <nav>
+          <ul>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#architecture">Architecture</a></li>
+            <li><a href="#quickstart">Quick Start</a></li>
+            <li><a href="#demo">Demo</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="container">
+        <h1>Deploy Serverless Functions on Your Own Terms</h1>
+        <p>
+          A modern, lightweight, and self-hosted serverless framework that lets
+          you deploy and run functions without managing servers.
+        </p>
+        <div>
+          <a
+            href="https://github.com/alob-mtc/serverless-framework"
+            class="btn btn-primary"
+            >Get Started</a
+          >
+          <a href="#demo" class="btn btn-secondary">Watch Demo</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="container">
+        <h2 class="section-title">Key Features</h2>
+        <div class="features">
+          <div class="feature-card">
+            <div class="feature-icon">🏠</div>
+            <h3>Self-hosted</h3>
+            <p>
+              Run everything on your own infrastructure with no vendor lock-in,
+              giving you complete control.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🛠️</div>
+            <h3>Simple Developer Experience</h3>
+            <p>
+              Easy-to-use CLI tool for creating, deploying, and managing your
+              serverless functions.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔒</div>
+            <h3>Secure by Design</h3>
+            <p>
+              JWT-based authentication and secure function isolation with Docker
+              containers.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <h3>Lightweight</h3>
+            <p>
+              Optimized for performance with minimal overhead, keeping your
+              functions fast.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔄</div>
+            <h3>Hot Reloading</h3>
+            <p>
+              Quick iteration on your function code with hot reloading
+              capabilities.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔌</div>
+            <h3>Docker-based Isolation</h3>
+            <p>
+              Each function runs in its own container for security and
+              dependency isolation.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section architecture" id="architecture">
+      <div class="container">
+        <h2 class="section-title">Architecture</h2>
+        <p>
+          Our serverless framework consists of an API Controller, CLI Tool, and
+          Docker-based function runtime.
+        </p>
+        <img
+          src="https://res.cloudinary.com/dukabills/image/upload/v1744150290/serverless_bo2zwr.png"
+          alt="Serverless Architecture"
+        />
+      </div>
+    </section>
+
+    <section class="section quickstart" id="quickstart">
+      <div class="container">
+        <h2 class="section-title">Quick Start</h2>
+        <div class="quickstart-steps">
+          <div class="step">
+            <div class="step-number">1</div>
+            <h3>Run the API Controller</h3>
+            <p>
+              Start the API controller and dependencies with Docker Compose:
+            </p>
+            <div class="code-block">
+              # Clone the repository<br />
+              git clone https://github.com/alob-mtc/invok.git<br />
+              cd invok<br /><br />
+              # Start the Serverless Core and dependencies with Docker
+              Compose<br />
+              docker-compose up -d<br /><br />
+              # Start the API controller<br />
+              cargo run -p serverless_core
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">2</div>
+            <h3>Install the CLI</h3>
+            <p>Build and install the command-line interface:</p>
+            <div class="code-block">
+              # Build the CLI<br />
+              cd cli<br />
+              cargo build --release<br /><br />
+              # Move to your PATH (optional)<br />
+              cp target/release/serverless-cli /usr/local/bin
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">3</div>
+            <h3>Deploy Your First Function</h3>
+            <p>Create and deploy a simple function:</p>
+            <div class="code-block">
+              # Register a user account<br />
+              serverless-cli register --email user@example.com --password
+              your_password<br /><br />
+              # Login<br />
+              serverless-cli login --email user@example.com --password
+              your_password<br /><br />
+              # Create a new function<br />
+              serverless-cli create-function -n hello-world<br /><br />
+              # Deploy your function<br />
+              serverless-cli deploy-function -n hello-world
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">4</div>
+            <h3>List Function</h3>
+            <p>list all deployed functions:</p>
+            <div class="code-block">
+              # List your deployed functions<br />
+              serverless-cli list<br /><br />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="demo">
+      <div class="container">
+        <h2 class="section-title">See It in Action</h2>
+        <p>Watch a quick demonstration of the serverless framework in use:</p>
+        <div class="video-container">
+          <iframe
+            src="https://www.youtube.com/embed/qLKV_cO_XhQ"
+            frameborder="0"
+            allowfullscreen
+          ></iframe>
+        </div>
+      </div>
+    </section>
+
+    <section class="section cta">
+      <div class="container">
+        <h2>Ready to Get Started?</h2>
+        <a
+          href="https://github.com/alob-mtc/serverless-framework"
+          class="btn btn-primary"
+          >View on GitHub</a
+        >
+        <a
+          href="https://github.com/alob-mtc/serverless-framework/blob/main/Readme.md"
+          class="btn btn-secondary"
+          >Read Documentation</a
+        >
+      </div>
+    </section>
+
+    <footer>
+      <div class="container">
+        <div class="footer-links">
+          <a href="https://github.com/alob-mtc/serverless-framework">GitHub</a>
+          <a
+            href="https://github.com/alob-mtc/serverless-framework/blob/main/Readme.md"
+            >Documentation</a
+          >
+          <a href="#features">Features</a>
+          <a href="#quickstart">Quick Start</a>
+        </div>
+        <p>This project is a proof of concept and not production-ready.</p>
+        <p>&copy; 2023 Serverless Framework. All rights reserved.</p>
+      </div>
+    </footer>
+  </body>
+</html>
