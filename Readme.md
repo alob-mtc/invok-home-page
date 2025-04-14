@@ -5,5 +5,3 @@ Check out the Invok project [here](https://github.com/alob-mtc/invok)
 
 
 This repo contains an example invok(serverless) function that runs on a self-hosted instance of Invok.
-
-you can call this function via: [invok-demo-home-page-function](https://freeserverless.com/service/home-page)
