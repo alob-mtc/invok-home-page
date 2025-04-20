@@ -1,4 +1,4 @@
 {
-  "function_name": ["home-page"],
+  "function_name": ["home-page", "invok-ide"],
   "runtime": "go"
 }

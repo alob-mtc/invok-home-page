@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Invok Web Editor</title>
+    <link
+      rel="stylesheet"
+      data-name="vs/editor/editor.main"
+      href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.49.0/min/vs/editor/editor.main.min.css"
+    />
+    <!-- Load JSZip without defer to ensure it's available immediately -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        background-color: #1e1e1e;
+        color: #d4d4d4;
+      }
+      .controls {
+        padding: 15px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        border-bottom: 1px solid #333;
+        background-color: #252526;
+        flex-wrap: wrap;
+      }
+      .controls label {
+        font-size: 0.9em;
+      }
+      .controls input,
+      .controls select,
+      .controls button {
+        padding: 8px 12px;
+        border-radius: 4px;
+        border: 1px solid #3c3c3c;
+        background-color: #3c3c3c;
+        color: #d4d4d4;
+        font-size: 0.9em;
+      }
+      .controls input:focus,
+      .controls select:focus {
+        outline: none;
+        border-color: #007acc;
+      }
+      .controls button {
+        cursor: pointer;
+        background-color: #0e639c;
+        border-color: #0e639c;
+      }
+      .controls button:hover {
+        background-color: #1177bb;
+      }
+      .controls button:active {
+        background-color: #0c568a;
+      }
+      .controls button.danger {
+        background-color: #a1260d;
+        border-color: #a1260d;
+      }
+      .controls button.danger:hover {
+        background-color: #bf2f11;
+      }
+      .auth-section {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-left: auto;
+      }
+      .auth-form {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .auth-status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .user-info {
+        font-size: 0.9em;
+        color: #9cdcfe;
+      }
+      .main-content {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+      #editor-container {
+        flex: 1;
+        min-width: 0;
+      }
+      .sidebar {
+        width: 300px;
+        border-left: 1px solid #333;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        background-color: #252526;
+        overflow-y: auto;
+      }
+      .sidebar h3 {
+        margin-top: 0;
+        margin-bottom: 10px;
+        font-size: 1em;
+        color: #cccccc;
+        border-bottom: 1px solid #333;
+        padding-bottom: 5px;
+      }
+      #output {
+        background-color: #1e1e1e;
+        border: 1px solid #3c3c3c;
+        padding: 10px;
+        font-family: monospace;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        color: #ce9178;
+        font-size: 0.9em;
+        flex-grow: 1;
+        overflow-y: auto;
+        min-height: 100px;
+      }
+      .input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .controls .separator {
+        height: 20px;
+        width: 1px;
+        background-color: #555;
+        margin: 0 5px;
+      }
+
+      /* CLI-style loading indicator */
+      .cli-loading {
+        color: #53d1ff;
+        font-family: monospace;
+        padding-left: 5px;
+        font-weight: bold;
+      }
+
+      .timestamp {
+        color: #888;
+        margin-right: 8px;
+      }
+
+      .command {
+        color: #53d1ff;
+        font-weight: bold;
+      }
+
+      .info {
+        color: #a5c25c;
+      }
+
+      .cli-line {
+        margin: 0;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="controls">
+      <label for="function-name">Function Name:</label>
+      <input
+        type="text"
+        id="function-name"
+        placeholder="my-function"
+        value="my-function"
+      />
+
+      <button id="create-function-button">Create Function</button>
+      <button id="deploy-button">Deploy</button>
+
+      <label for="server-host">Server Host:</label>
+      <input
+        type="text"
+        id="server-host"
+        placeholder="https://freeserverless.com"
+        value="https://freeserverless.com"
+      />
+
+      <div class="separator"></div>
+
+      <!-- Authentication section -->
+      <div class="auth-section" id="auth-section">
+        <!-- Login form (initially visible) -->
+        <div class="auth-form" id="auth-form">
+          <input type="email" id="email" placeholder="Email" required />
+          <input
+            type="password"
+            id="password"
+            placeholder="Password"
+            required
+          />
+          <button id="login-button">Login</button>
+          <button id="register-button">Register</button>
+        </div>
+
+        <!-- User info (initially hidden) -->
+        <div class="auth-status" id="auth-status" style="display: none">
+          <span class="user-info" id="user-info"></span>
+          <button id="logout-button" class="danger">Logout</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div id="editor-container"></div>
+      <div class="sidebar">
+        <h3>Output / Status</h3>
+        <div id="output">Deployment status will appear here...</div>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.49.0/min/vs/loader.min.js"></script>
+    <script>
+      // Check if JSZip loaded properly
+      if (typeof JSZip === "undefined") {
+        console.error(
+          "JSZip not loaded initially. Attempting to load it dynamically..."
+        );
+        // Try to load it dynamically
+        const jsZipScript = document.createElement("script");
+        jsZipScript.src =
+          "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+        jsZipScript.onload = function () {
+          console.log("JSZip loaded dynamically");
+          document.getElementById("output").textContent =
+            "JSZip loaded successfully. Ready for deployment.";
+        };
+        jsZipScript.onerror = function () {
+          console.error("Failed to load JSZip dynamically");
+          document.getElementById("output").textContent =
+            "Failed to load JSZip. Please check your internet connection and try refreshing the page.";
+        };
+        document.head.appendChild(jsZipScript);
+      } else {
+        console.log("JSZip loaded successfully on page load");
+      }
+
+      // Auth-related constants and functions
+      const AUTH_STORAGE_KEY = "serverless-web-editor-auth";
+
+      // DOM elements
+      const outputDiv = document.getElementById("output");
+      const serverHostInput = document.getElementById("server-host");
+      const emailInput = document.getElementById("email");
+      const passwordInput = document.getElementById("password");
+      const loginButton = document.getElementById("login-button");
+      const registerButton = document.getElementById("register-button");
+      const logoutButton = document.getElementById("logout-button");
+      const authForm = document.getElementById("auth-form");
+      const authStatus = document.getElementById("auth-status");
+      const userInfoSpan = document.getElementById("user-info");
+
+      // Auth session management
+      let authSession = null;
+
+      // Load auth session from localStorage
+      function loadAuthSession() {
+        const storedSession = localStorage.getItem(AUTH_STORAGE_KEY);
+        if (storedSession) {
+          try {
+            authSession = JSON.parse(storedSession);
+            updateAuthUI(true);
+            return true;
+          } catch (e) {
+            console.error("Error parsing stored auth session:", e);
+          }
+        }
+        updateAuthUI(false);
+        return false;
+      }
+
+      // Save auth session to localStorage
+      function saveAuthSession(session) {
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+        authSession = session;
+        updateAuthUI(true);
+      }
+
+      // Clear auth session
+      function clearAuthSession() {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        authSession = null;
+        updateAuthUI(false);
+      }
+
+      // Update UI based on auth state
+      function updateAuthUI(isLoggedIn) {
+        if (isLoggedIn && authSession) {
+          authForm.style.display = "none";
+          authStatus.style.display = "flex";
+          userInfoSpan.textContent = `Logged in as: ${authSession.email}`;
+        } else {
+          authForm.style.display = "flex";
+          authStatus.style.display = "none";
+          userInfoSpan.textContent = "";
+        }
+      }
+
+      // Login function
+      async function login(email, password) {
+        const serverHost = serverHostInput.value.trim();
+        const loginUrl = `${serverHost}/auth/login`;
+
+        try {
+          const response = await fetch(loginUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email, password }),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Login failed: ${response.status} ${errorText}`);
+          }
+
+          const authResponse = await response.json();
+
+          // Save session
+          const session = {
+            token: authResponse.token,
+            user_uuid: authResponse.user.uuid,
+            email: authResponse.user.email,
+          };
+
+          saveAuthSession(session);
+          outputDiv.textContent = `Logged in successfully as ${session.email}`;
+          return session;
+        } catch (error) {
+          console.error("Login error:", error);
+          outputDiv.textContent = `❌ Login error: ${error.message}`;
+          throw error;
+        }
+      }
+
+      // Register function
+      async function register(email, password) {
+        const serverHost = serverHostInput.value.trim();
+        const registerUrl = `${serverHost}/auth/register`;
+
+        try {
+          const response = await fetch(registerUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email, password }),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(
+              `Registration failed: ${response.status} ${errorText}`
+            );
+          }
+
+          const authResponse = await response.json();
+
+          // Save session
+          const session = {
+            token: authResponse.token,
+            user_uuid: authResponse.user.uuid,
+            email: authResponse.user.email,
+          };
+
+          saveAuthSession(session);
+          outputDiv.textContent = `Registered and logged in successfully as ${session.email}`;
+          return session;
+        } catch (error) {
+          console.error("Registration error:", error);
+          outputDiv.textContent = `❌ Registration error: ${error.message}`;
+          throw error;
+        }
+      }
+
+      // Event listeners for auth
+      loginButton.addEventListener("click", async () => {
+        const email = emailInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        if (!email || !password) {
+          outputDiv.textContent = "Email and password are required";
+          return;
+        }
+
+        outputDiv.textContent = "Logging in...";
+        try {
+          await login(email, password);
+          // Clear inputs
+          emailInput.value = "";
+          passwordInput.value = "";
+        } catch (error) {
+          // Error already handled in login function
+        }
+      });
+
+      registerButton.addEventListener("click", async () => {
+        const email = emailInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        if (!email || !password) {
+          outputDiv.textContent = "Email and password are required";
+          return;
+        }
+
+        outputDiv.textContent = "Registering...";
+        try {
+          await register(email, password);
+          // Clear inputs
+          emailInput.value = "";
+          passwordInput.value = "";
+        } catch (error) {
+          // Error already handled in register function
+        }
+      });
+
+      logoutButton.addEventListener("click", () => {
+        clearAuthSession();
+        outputDiv.textContent = "Logged out successfully";
+      });
+
+      // Check auth session on page load
+      loadAuthSession();
+
+      let editor;
+      // Function to generate boilerplate code based on function name
+      function generateBoilerplate(functionName) {
+        // Convert kebab-case to CamelCase
+        const camelCaseName = functionName
+          .split("-")
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .join("");
+
+        // Generate the boilerplate code
+        return `package main
+
+import (
+	"net/http"
+)
+
+// Handler for the "/${functionName}" endpoint.
+func ${camelCaseName}Handler(w http.ResponseWriter, r *http.Request) {
+	// You can access query params via r.URL.Query().
+	// For example:
+	// query := r.URL.Query()
+	// name := query.Get("name")
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Hello World!"))
+}`;
+      }
+
+      // Initial empty editor
+      const defaultCode = generateBoilerplate("my-function");
+
+      require.config({
+        paths: {
+          vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.49.0/min/vs",
+        },
+      });
+      require(["vs/editor/editor.main"], function () {
+        editor = monaco.editor.create(
+          document.getElementById("editor-container"),
+          {
+            value: defaultCode,
+            language: "go",
+            theme: "vs-dark",
+            automaticLayout: true, // Adjusts editor layout on container resize
+          }
+        );
+      });
+
+      // Deploy button logic
+      const deployButton = document.getElementById("deploy-button");
+      const functionNameInput = document.getElementById("function-name");
+      const createFunctionButton = document.getElementById(
+        "create-function-button"
+      );
+
+      // Create Function button logic
+      createFunctionButton.addEventListener("click", () => {
+        const functionName = functionNameInput.value.trim();
+
+        if (!functionName) {
+          outputDiv.textContent = "Error: Function name cannot be empty.";
+          return;
+        }
+
+        // Generate and set the new boilerplate
+        const boilerplateCode = generateBoilerplate(functionName);
+        editor.setValue(boilerplateCode);
+
+        // Display success message
+        outputDiv.textContent = `Function "${functionName}" created successfully. Edit the code and click Deploy when ready.`;
+      });
+
+      // Function to ensure JSZip is available
+      function ensureJSZip() {
+        return new Promise((resolve, reject) => {
+          // If JSZip is already loaded, resolve immediately
+          if (typeof JSZip !== "undefined") {
+            resolve();
+            return;
+          }
+
+          // Otherwise, try to load it
+          const script = document.createElement("script");
+          script.src =
+            "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+          script.onload = () => resolve();
+          script.onerror = () =>
+            reject(new Error("Failed to load JSZip library"));
+          document.head.appendChild(script);
+        });
+      }
+
+      deployButton.addEventListener("click", async () => {
+        const code = editor.getValue();
+        const functionName = functionNameInput.value.trim();
+        const serverHost = serverHostInput.value.trim();
+
+        // Input validation
+        if (!functionName) {
+          outputDiv.textContent = "Error: Function name cannot be empty.";
+          return;
+        }
+        if (!serverHost) {
+          outputDiv.textContent = "Error: Server host cannot be empty.";
+          return;
+        }
+
+        // Check authentication
+        if (!authSession || !authSession.token) {
+          outputDiv.textContent =
+            "Error: You must be logged in to deploy a function. Please login first.";
+          return;
+        }
+
+        // Clear previous output
+        outputDiv.innerHTML = "";
+
+        // Add timestamp function
+        function getTimestamp() {
+          const now = new Date();
+          return `[${now.getHours().toString().padStart(2, "0")}:${now
+            .getMinutes()
+            .toString()
+            .padStart(2, "0")}:${now
+            .getSeconds()
+            .toString()
+            .padStart(2, "0")}]`;
+        }
+
+        // Add log line function
+        function addLogLine(command, message) {
+          const line = document.createElement("p");
+          line.className = "cli-line";
+          line.innerHTML = `<span class="timestamp">${getTimestamp()}</span><span class="command">${command}</span> <span class="info">${message}</span>`;
+          outputDiv.appendChild(line);
+          outputDiv.scrollTop = outputDiv.scrollHeight;
+        }
+
+        addLogLine("$", "Preparing deployment...");
+
+        try {
+          // Ensure JSZip is loaded
+          await ensureJSZip();
+
+          const zip = new JSZip();
+          const mainFileName = `function.go`;
+          const runtime = "go";
+
+          // Add the main code file
+          zip.file(mainFileName, code);
+
+          // Add config.json - required by Invok
+          const configJson = {
+            function_name: functionName,
+            runtime: runtime,
+            env: {},
+          };
+
+          zip.file(`config.json`, JSON.stringify(configJson, null, 2));
+
+          addLogLine("$", "Creating archive...");
+          const zipBlob = await zip.generateAsync({
+            type: "blob",
+            compression: "DEFLATE",
+          });
+
+          // Log ZIP file size for debugging
+          addLogLine(
+            "INFO",
+            `Archive created: ${(zipBlob.size / 1024).toFixed(2)} KB`
+          );
+
+          // Prepare form data for upload
+          const formData = new FormData();
+
+          // The server expects a file with .zip extension
+          formData.append(
+            "file",
+            new Blob([zipBlob], { type: "application/zip" }),
+            `${functionName}.zip`
+          );
+
+          // The endpoint based on server configuration
+          const uploadUrl = `${serverHost}/functions/upload`;
+          addLogLine("$", `Deploying to ${uploadUrl}...`);
+
+          // Show progress with dots animation
+          const progressLine = document.createElement("p");
+          progressLine.className = "cli-line";
+          progressLine.innerHTML = '<span class="cli-loading">Uploading</span>';
+          outputDiv.appendChild(progressLine);
+
+          let dots = 0;
+          const loadingInterval = setInterval(() => {
+            dots = (dots + 1) % 4;
+            progressLine.innerHTML = `<span class="cli-loading">Uploading${".".repeat(
+              dots
+            )}</span>`;
+          }, 300);
+
+          // Make the request with authorization header
+          const response = await fetch(uploadUrl, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${authSession.token}`,
+            },
+            body: formData,
+          });
+
+          // Clear the loading animation
+          clearInterval(loadingInterval);
+          outputDiv.removeChild(progressLine);
+
+          // Handle the response carefully
+          let responseData;
+          const responseText = await response.text();
+
+          try {
+            // Try to parse as JSON if possible
+            responseData = JSON.parse(responseText);
+          } catch (e) {
+            // If not valid JSON, use text as is
+            responseData = responseText;
+          }
+
+          if (response.ok) {
+            addLogLine("SUCCESS", "✓ Deployment completed successfully!");
+
+            if (typeof responseData === "object") {
+              const responseLine = document.createElement("pre");
+              responseLine.style.margin = "10px 0";
+              responseLine.style.padding = "10px";
+              responseLine.style.backgroundColor = "#2a2a2a";
+              responseLine.style.border = "1px solid #444";
+              responseLine.style.borderRadius = "3px";
+              responseLine.textContent = JSON.stringify(responseData, null, 2);
+              outputDiv.appendChild(responseLine);
+            } else {
+              addLogLine("RESPONSE", responseData);
+            }
+
+            // Add function URL information if available
+            const functionUrl = `${serverHost}/service/${functionName}`;
+
+            // Add service URL info
+            addLogLine("INFO", "Service is now available at:");
+
+            // Create URL element
+            const urlElement = document.createElement("div");
+            urlElement.style.margin = "10px 0";
+            urlElement.style.fontSize = "1.1em";
+            urlElement.innerHTML = `<a href="${functionUrl}" target="_blank" style="color: #3794ff; text-decoration: none;">${functionUrl}</a>`;
+            outputDiv.appendChild(urlElement);
+
+            addLogLine("CURL", `curl ${functionUrl}`);
+          } else {
+            addLogLine(
+              "ERROR",
+              `✗ Deployment failed (${response.status} ${response.statusText})`
+            );
+
+            if (typeof responseData === "object") {
+              const errorResponseLine = document.createElement("pre");
+              errorResponseLine.style.margin = "10px 0";
+              errorResponseLine.style.padding = "10px";
+              errorResponseLine.style.backgroundColor = "#3a2323";
+              errorResponseLine.style.border = "1px solid #5a3434";
+              errorResponseLine.style.borderRadius = "3px";
+              errorResponseLine.style.color = "#e06c75";
+              errorResponseLine.textContent = JSON.stringify(
+                responseData,
+                null,
+                2
+              );
+              outputDiv.appendChild(errorResponseLine);
+            } else {
+              addLogLine("RESPONSE", responseData);
+            }
+
+            // Special handling for auth errors
+            if (response.status === 401) {
+              addLogLine(
+                "AUTH",
+                "Authentication failed. Please try logging in again."
+              );
+              // Clear potentially expired session
+              clearAuthSession();
+            }
+          }
+        } catch (error) {
+          console.error("Deployment error:", error);
+          addLogLine("ERROR", `✗ Deployment error: ${error.message}`);
+
+          // Additional debugging information
+          if (error.stack) {
+            console.error(error.stack);
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
