@@ -676,7 +676,7 @@ func ${camelCaseName}Handler(w http.ResponseWriter, r *http.Request) {
             }
 
             // Add function URL information if available
-            const functionUrl = `${serverHost}/service/${functionName}`;
+            const functionUrl = `${serverHost}/functions/${authSession.user_uuid}/invoke/${functionName}`;
 
             // Add service URL info
             addLogLine("INFO", "Service is now available at:");
